@@ -16,20 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Shared UI Components for OpenOrder
-// Built with Radix UI primitives + Tailwind CSS
-// Follows Base 8 spacing system and strict accessibility standards
+import { type ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
-// Utility functions
-export { cn } from './lib/utils';
-
-// Components
-export * from './components/button';
-export * from './components/input';
-export * from './components/textarea';
-export * from './components/card';
-export * from './components/dialog';
-export * from './components/select';
-export * from './components/spinner';
-export * from './components/badge';
-export * from './components/form-field';
+/**
+ * Merge Tailwind CSS classes with proper precedence
+ * Uses clsx for conditional classes and tailwind-merge for deduplication
+ */
+export function cn(...inputs: ClassValue[]): string {
+  return twMerge(clsx(inputs));
+}
