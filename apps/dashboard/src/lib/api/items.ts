@@ -144,3 +144,65 @@ export function useToggleItemAvailability() {
     },
   });
 }
+
+/**
+ * Hook to bulk delete menu items
+ */
+export function useBulkDeleteMenuItems() {
+  const { user } = useAuthStore();
+  const restaurantId = user?.restaurantId;
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (itemIds: string[]) => {
+      // Delete items in parallel
+      await Promise.all(
+        itemIds.map((itemId) =>
+          apiClient.delete(`/restaurants/${restaurantId}/menu/items/${itemId}`)
+        )
+      );
+    },
+    onSuccess: (_, itemIds) => {
+      queryClient.invalidateQueries({ queryKey: ['items', restaurantId] });
+      queryClient.invalidateQueries({ queryKey: ['categories', restaurantId] });
+      toast.success(`${itemIds.length} ${itemIds.length === 1 ? 'item' : 'items'} deleted successfully`);
+    },
+    onError: () => {
+      toast.error('Failed to delete items. Please try again.');
+    },
+  });
+}
+
+/**
+ * Hook to bulk toggle item availability
+ */
+export function useBulkToggleAvailability() {
+  const { user } = useAuthStore();
+  const restaurantId = user?.restaurantId;
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ itemIds, isAvailable }: { itemIds: string[]; isAvailable: boolean }) => {
+      // Update items in parallel
+      await Promise.all(
+        itemIds.map((itemId) =>
+          apiClient.patch<ApiResponse<MenuItem>>(
+            `/restaurants/${restaurantId}/menu/items/${itemId}/availability`,
+            { isAvailable }
+          )
+        )
+      );
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['items', restaurantId] });
+      const count = variables.itemIds.length;
+      const status = variables.isAvailable ? 'available' : '86';
+      toast.success(
+        `${count} ${count === 1 ? 'item' : 'items'} marked as ${status}`
+      );
+    },
+    onError: () => {
+      toast.error('Failed to update items. Please try again.');
+    },
+  });
+}

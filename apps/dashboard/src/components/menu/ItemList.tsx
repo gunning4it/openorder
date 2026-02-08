@@ -16,8 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import { useState } from 'react';
 import { useMenuItems, useDeleteMenuItem, useToggleItemAvailability } from '../../lib/api/items';
 import type { MenuItem } from '@openorder/shared-types';
+import BulkActionsToolbar from './BulkActionsToolbar';
 
 interface ItemListProps {
   selectedCategoryId?: string;
@@ -36,6 +38,9 @@ export default function ItemList({ selectedCategoryId, onAddItem, onEditItem }: 
   const { data: items, isLoading } = useMenuItems(selectedCategoryId);
   const deleteMutation = useDeleteMenuItem();
   const toggleAvailabilityMutation = useToggleItemAvailability();
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+
+  const displayItems = items || [];
 
   const handleDelete = (item: MenuItem) => {
     if (
@@ -54,6 +59,32 @@ export default function ItemList({ selectedCategoryId, onAddItem, onEditItem }: 
     });
   };
 
+  const handleSelectItem = (itemId: string) => {
+    const newSelected = new Set(selectedItems);
+    if (newSelected.has(itemId)) {
+      newSelected.delete(itemId);
+    } else {
+      newSelected.add(itemId);
+    }
+    setSelectedItems(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedItems.size === displayItems.length) {
+      setSelectedItems(new Set());
+    } else {
+      setSelectedItems(new Set(displayItems.map((item) => item.id)));
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedItems(new Set());
+  };
+
+  const getSelectedMenuItems = (): MenuItem[] => {
+    return displayItems.filter((item) => selectedItems.has(item.id));
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-16">
@@ -65,18 +96,52 @@ export default function ItemList({ selectedCategoryId, onAddItem, onEditItem }: 
     );
   }
 
-  const displayItems = items || [];
-
   return (
     <div className="relative">
+      {/* Bulk Actions Toolbar */}
+      {selectedItems.size > 0 && (
+        <BulkActionsToolbar
+          selectedItems={getSelectedMenuItems()}
+          onClearSelection={handleClearSelection}
+          onActionComplete={handleClearSelection}
+        />
+      )}
+
       {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-semibold text-gray-900">Menu Items</h2>
-        <p className="mt-2 text-sm text-gray-600">
-          {selectedCategoryId
-            ? 'Showing items in selected category'
-            : 'Showing all menu items'}
-        </p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold text-gray-900">Menu Items</h2>
+          <p className="mt-2 text-sm text-gray-600">
+            {selectedCategoryId
+              ? 'Showing items in selected category'
+              : 'Showing all menu items'}
+          </p>
+        </div>
+        {displayItems.length > 0 && (
+          <button
+            onClick={handleSelectAll}
+            className="
+              inline-flex items-center gap-2
+              px-4 py-2 text-sm font-medium
+              text-gray-700 bg-white
+              border border-gray-300 rounded-md
+              hover:bg-gray-50
+              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+              transition-all duration-200
+            "
+          >
+            <input
+              type="checkbox"
+              checked={selectedItems.size === displayItems.length && displayItems.length > 0}
+              onChange={handleSelectAll}
+              className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+              aria-label="Select all items"
+            />
+            {selectedItems.size === displayItems.length && displayItems.length > 0
+              ? 'Deselect All'
+              : 'Select All'}
+          </button>
+        )}
       </div>
 
       {/* Empty State */}
@@ -125,12 +190,24 @@ export default function ItemList({ selectedCategoryId, onAddItem, onEditItem }: 
             {displayItems.map((item) => (
               <div
                 key={item.id}
-                className="
-                  bg-white border border-gray-200 rounded-lg overflow-hidden
+                className={`
+                  bg-white border-2 rounded-lg overflow-hidden
                   hover:shadow-lg hover:-translate-y-0.5
                   transition-all duration-200
-                "
+                  ${selectedItems.has(item.id) ? 'border-blue-600 ring-2 ring-blue-200' : 'border-gray-200'}
+                `}
               >
+                {/* Selection Checkbox */}
+                <div className="absolute top-4 left-4 z-10">
+                  <input
+                    type="checkbox"
+                    checked={selectedItems.has(item.id)}
+                    onChange={() => handleSelectItem(item.id)}
+                    className="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 bg-white shadow-sm"
+                    aria-label={`Select ${item.name}`}
+                  />
+                </div>
+
                 {/* Image */}
                 <div className="relative w-full h-48 bg-gray-100">
                   {item.imageUrl ? (
