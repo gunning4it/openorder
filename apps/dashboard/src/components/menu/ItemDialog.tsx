@@ -196,7 +196,7 @@ export default function ItemDialog({ item, isOpen, onClose, defaultCategoryId }:
         await createMutation.mutateAsync(apiData as Partial<CreateMenuItemInput> & Pick<CreateMenuItemInput, 'name' | 'categoryId' | 'price'>);
       }
       onClose();
-    } catch (error) {
+    } catch {
       // Error is handled by mutation onError
     }
   };

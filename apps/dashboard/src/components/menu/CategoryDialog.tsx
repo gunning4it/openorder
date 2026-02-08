@@ -109,7 +109,7 @@ export default function CategoryDialog({ category, isOpen, onClose }: CategoryDi
         await createMutation.mutateAsync(apiData);
       }
       onClose();
-    } catch (error) {
+    } catch {
       // Error is handled by mutation onError
     }
   };

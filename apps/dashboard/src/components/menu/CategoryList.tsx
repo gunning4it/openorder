@@ -217,7 +217,7 @@ export default function CategoryList({ onCategorySelect }: CategoryListProps) {
   const handleDelete = async (categoryId: string) => {
     try {
       await deleteMutation.mutateAsync(categoryId);
-    } catch (error) {
+    } catch {
       // Error handled by mutation
     }
   };
