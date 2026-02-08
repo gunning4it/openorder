@@ -18,6 +18,7 @@
 
 import type { Metadata } from 'next';
 import { getPublicMenu } from '../../../src/lib/api';
+import MenuDisplay from '../../../src/components/menu/MenuDisplay';
 
 export async function generateMetadata({
   params,
@@ -59,33 +60,24 @@ export default async function MenuPage({
     return null; // Will be handled by notFound() in layout
   }
 
-  const { categories } = menuData;
-
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <>
       {/* Cover Image */}
       {menuData.restaurant.coverImageUrl && (
-        <div className="mb-8 rounded-lg overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={menuData.restaurant.coverImageUrl}
-            alt={`${menuData.restaurant.name} cover`}
-            className="w-full h-48 sm:h-64 lg:h-80 object-cover"
-          />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+          <div className="mb-8 rounded-lg overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={menuData.restaurant.coverImageUrl}
+              alt={`${menuData.restaurant.name} cover`}
+              className="w-full h-48 sm:h-64 lg:h-80 object-cover"
+            />
+          </div>
         </div>
       )}
 
-      {/* Menu Content Placeholder */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-4">Menu</h2>
-        <p className="text-gray-600">
-          Menu display will be implemented in Task #15.
-        </p>
-        <p className="text-sm text-gray-500 mt-2">
-          Found {categories.length} categories with{' '}
-          {categories.reduce((total, cat) => total + cat.items.length, 0)} items
-        </p>
-      </div>
-    </div>
+      {/* Menu Display */}
+      <MenuDisplay menu={menuData} />
+    </>
   );
 }
