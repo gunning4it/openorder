@@ -55,3 +55,7 @@ apps/api/prisma/migrations/dev.db*
 *.log
 tmp/
 temp/
+
+# Project-specific files
+CLAUDE.md
+LICENSE-HEADER.txt
