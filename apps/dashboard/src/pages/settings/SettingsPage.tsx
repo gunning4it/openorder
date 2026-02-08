@@ -53,8 +53,8 @@ const generalFormSchema = z.object({
 });
 
 // Helper to convert empty strings to undefined for API submission
-function cleanFormData<T extends Record<string, any>>(data: T): Partial<T> {
-  const cleaned: Record<string, any> = {};
+function cleanFormData<T extends Record<string, unknown>>(data: T): Partial<T> {
+  const cleaned: Record<string, unknown> = {};
   Object.keys(data).forEach((key) => {
     const value = data[key];
     cleaned[key] = value === '' ? undefined : value;

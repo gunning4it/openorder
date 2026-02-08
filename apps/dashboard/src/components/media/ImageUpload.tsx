@@ -17,7 +17,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { useDropzone } from 'react-dropzone';
+import { useDropzone, type FileRejection } from 'react-dropzone';
 import { useUploadImage } from '../../lib/api/media';
 
 interface ImageUploadProps {
@@ -47,7 +47,7 @@ export default function ImageUpload({
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
 
   const onDrop = useCallback(
-    async (acceptedFiles: File[], rejectedFiles: any[]) => {
+    async (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
       setError(null);
 
       // Handle rejected files

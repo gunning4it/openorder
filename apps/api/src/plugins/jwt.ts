@@ -5,9 +5,10 @@
 import fastifyPlugin from 'fastify-plugin';
 import jwt from '@fastify/jwt';
 import cookie from '@fastify/cookie';
+import type { FastifyInstance } from 'fastify';
 import { getEnv } from '../config/env.js';
 
-async function jwtPlugin(fastify: any) {
+async function jwtPlugin(fastify: FastifyInstance) {
   const env = getEnv();
 
   // Register cookie plugin first (JWT depends on it)
