@@ -1,0 +1,174 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2025 OpenOrder Contributors
+
+name: Docker Security Scan
+
+on:
+  pull_request:
+    paths:
+      - 'apps/**/Dockerfile*'
+      - 'docker/**'
+      - '.github/workflows/docker-security.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/**/Dockerfile*'
+      - 'docker/**'
+      - '.github/workflows/docker-security.yml'
+  schedule:
+    # Run weekly on Mondays at 00:00 UTC to catch new CVEs
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+jobs:
+  scan-base-images:
+    name: Scan Base Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
+    strategy:
+      matrix:
+        include:
+          - image: postgres:16-alpine
+            name: postgres
+          - image: redis:7-alpine
+            name: redis
+          - image: nginx:alpine
+            name: nginx
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Pull base image
+        run: docker pull ${{ matrix.image }}
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ matrix.image }}
+          format: 'sarif'
+          output: 'trivy-results-${{ matrix.name }}.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results-${{ matrix.name }}.sarif'
+          category: 'trivy-${{ matrix.name }}'
+
+      - name: Run Trivy vulnerability scanner (table output)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ matrix.image }}
+          format: 'table'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'
+
+      - name: Fail on critical vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ matrix.image }}
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+
+  scan-built-images:
+    name: Scan Built Application Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
+    strategy:
+      matrix:
+        include:
+          - dockerfile: ./apps/api/Dockerfile
+            context: .
+            name: api
+          - dockerfile: ./apps/storefront/Dockerfile
+            context: .
+            name: storefront
+          - dockerfile: ./apps/dashboard/Dockerfile
+            context: .
+            name: dashboard
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: false
+          load: true
+          tags: openorder-${{ matrix.name }}:scan
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: openorder-${{ matrix.name }}:scan
+          format: 'sarif'
+          output: 'trivy-results-${{ matrix.name }}.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results-${{ matrix.name }}.sarif'
+          category: 'trivy-${{ matrix.name }}'
+
+      - name: Run Trivy vulnerability scanner (table output)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: openorder-${{ matrix.name }}:scan
+          format: 'table'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'
+
+      - name: Fail on critical vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: openorder-${{ matrix.name }}:scan
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+
+  scan-docker-compose:
+    name: Scan Docker Compose Configuration
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy config scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: './docker'
+          format: 'table'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'
+
+      - name: Fail on critical misconfigurations
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: './docker'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'

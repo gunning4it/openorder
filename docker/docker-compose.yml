@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine3.23
     container_name: openorder-postgres
     restart: unless-stopped
     environment:
@@ -11,8 +11,11 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:?Database password required}
     volumes:
       - pgdata:/var/lib/postgresql/data
-    ports:
-      - "${DB_PORT:-5432}:5432"
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - backend
+      - default
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-openorder}"]
       interval: 5s
@@ -20,14 +23,17 @@ services:
       retries: 10
 
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine3.22
     container_name: openorder-redis
     restart: unless-stopped
     command: redis-server --appendonly yes
     volumes:
       - redisdata:/data
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - backend
+      - default
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -55,6 +61,11 @@ services:
       API_PORT: 4000
     ports:
       - "${API_PORT:-4000}:4000"
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - backend
+      - default
     command: >
       sh -c "npx prisma migrate deploy && node dist/server.js"
 
@@ -115,3 +126,6 @@ volumes:
 networks:
   default:
     name: openorder-network
+  backend:
+    name: openorder-backend
+    internal: false
