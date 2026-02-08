@@ -1,0 +1,19 @@
+/*
+ * OpenOrder - Open-source restaurant ordering platform
+ * Copyright (C) 2026  Josh Gunning
+ * AGPL-3.0 License
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+  }
+}
