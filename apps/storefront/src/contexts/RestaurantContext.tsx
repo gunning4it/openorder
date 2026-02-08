@@ -16,22 +16,38 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import type { Metadata } from 'next';
-import './globals.css';
+'use client';
 
-export const metadata: Metadata = {
-  title: 'OpenOrder',
-  description: 'Order food online',
-};
+import { createContext, useContext, type ReactNode } from 'react';
+import type { Restaurant, OperatingHours } from '../lib/api';
 
-export default function RootLayout({
+interface RestaurantContextValue {
+  restaurant: Restaurant;
+  operatingHours: OperatingHours[];
+}
+
+const RestaurantContext = createContext<RestaurantContextValue | null>(null);
+
+export function RestaurantProvider({
   children,
+  restaurant,
+  operatingHours,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
+  restaurant: Restaurant;
+  operatingHours: OperatingHours[];
 }) {
   return (
-    <html lang="en">
-      <body className="antialiased">{children}</body>
-    </html>
+    <RestaurantContext.Provider value={{ restaurant, operatingHours }}>
+      {children}
+    </RestaurantContext.Provider>
   );
+}
+
+export function useRestaurant() {
+  const context = useContext(RestaurantContext);
+  if (!context) {
+    throw new Error('useRestaurant must be used within RestaurantProvider');
+  }
+  return context;
 }
