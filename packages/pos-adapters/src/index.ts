@@ -16,14 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Shared TypeScript types for OpenOrder
-// This package provides type definitions used across all apps
+// POS adapter implementations for OpenOrder
+// Supports Square, Toast, Clover, and generic webhook integrations
 
-// TODO: Add type definitions in Phase 1
-// export * from './restaurant';
-// export * from './menu';
-// export * from './order';
-// export * from './payment';
-// export * from './pos';
-
+// TODO: Add POS adapter implementations in Phase 4
 export {};

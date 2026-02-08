@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: AGPL-3.0
+# OpenOrder Storefront - Development Dockerfile
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+EXPOSE 3000
+
+CMD ["sh", "-c", "pnpm install && cd apps/storefront && pnpm dev"]

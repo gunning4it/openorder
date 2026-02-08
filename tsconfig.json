@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2022"],
@@ -11,9 +12,7 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "composite": true,
+    "composite": false,
     "incremental": true,
     "strict": true,
     "noUnusedLocals": true,
@@ -25,5 +24,16 @@
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true
   },
-  "exclude": ["node_modules", "dist", "build", ".next"]
+  "files": [],
+  "references": [
+    { "path": "./apps/api" },
+    { "path": "./apps/storefront" },
+    { "path": "./apps/dashboard" },
+    { "path": "./apps/widget" },
+    { "path": "./packages/shared-types" },
+    { "path": "./packages/ui" },
+    { "path": "./packages/pos-adapters" },
+    { "path": "./packages/payment-adapters" }
+  ],
+  "exclude": ["node_modules", "dist", "build", ".next", "**/*.spec.ts", "**/*.test.ts"]
 }

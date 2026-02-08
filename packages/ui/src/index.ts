@@ -16,14 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Shared TypeScript types for OpenOrder
-// This package provides type definitions used across all apps
+// Shared UI components for OpenOrder
+// This package will contain Radix UI + Tailwind components
 
-// TODO: Add type definitions in Phase 1
-// export * from './restaurant';
-// export * from './menu';
-// export * from './order';
-// export * from './payment';
-// export * from './pos';
-
+// TODO: Add UI components in Phase 1
 export {};

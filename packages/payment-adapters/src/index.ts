@@ -16,14 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Shared TypeScript types for OpenOrder
-// This package provides type definitions used across all apps
+// Payment adapter implementations for OpenOrder
+// Supports Stripe Connect and custom payment providers
 
-// TODO: Add type definitions in Phase 1
-// export * from './restaurant';
-// export * from './menu';
-// export * from './order';
-// export * from './payment';
-// export * from './pos';
-
+// TODO: Add payment adapter implementations in Phase 2
 export {};

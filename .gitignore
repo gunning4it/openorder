@@ -13,6 +13,7 @@ dist
 build
 .next
 out
+*.tsbuildinfo
 
 # Environment variables
 .env
@@ -59,3 +60,10 @@ temp/
 # Project-specific files
 CLAUDE.md
 LICENSE-HEADER.txt
+
+# Internal documentation (development artifacts)
+docs/DOCKER_CVE_ADVISORY.md
+docs/PHASE_*.md
+docs/IMPLEMENTATION_STATUS.md
+docs/README_PHASE*.md
+docs/TYPESCRIPT_FIXES_NEEDED.md

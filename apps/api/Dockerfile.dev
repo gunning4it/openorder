@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: AGPL-3.0
+# OpenOrder API - Development Dockerfile
+# Hot reload with volume mounts
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Install dependencies (will be volume-mounted in docker-compose.dev.yml)
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+
+# Expose port
+EXPOSE 4000
+
+# Development command (will be overridden in docker-compose.dev.yml)
+CMD ["sh", "-c", "pnpm install && cd apps/api && pnpm prisma generate && pnpm dev"]
