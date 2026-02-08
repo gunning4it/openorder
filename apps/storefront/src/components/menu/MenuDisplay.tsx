@@ -20,6 +20,7 @@
 
 import { useState } from 'react';
 import type { PublicMenuResponse, MenuItem } from '../../lib/api';
+import { useCartStore } from '../../stores/cart.store';
 import MenuCategoryNav from './MenuCategoryNav';
 import MenuCategory from './MenuCategory';
 import ItemDetailModal from './ItemDetailModal';
@@ -61,8 +62,24 @@ export default function MenuDisplay({ menu }: MenuDisplayProps) {
     quantity: number,
     notes: string
   ) => {
-    // TODO: Add to cart store in Task #17
-    console.log('Add to cart:', { item, modifiers, quantity, notes });
+    const { addItem, openSidebar } = useCartStore.getState();
+
+    addItem({
+      menuItemId: item.id,
+      name: item.name,
+      unitPrice: item.price,
+      quantity,
+      modifiers: modifiers.map(m => ({
+        modifierId: m.modifierId,
+        name: m.name,
+        price: m.price,
+      })),
+      specialNotes: notes || undefined,
+      imageUrl: item.imageUrl,
+    });
+
+    openSidebar();
+    handleCloseModal();
   };
 
   // Filter out empty categories

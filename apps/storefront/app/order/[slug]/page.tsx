@@ -19,6 +19,8 @@
 import type { Metadata } from 'next';
 import { getPublicMenu } from '../../../src/lib/api';
 import MenuDisplay from '../../../src/components/menu/MenuDisplay';
+import CartButton from '../../../src/components/cart/CartButton';
+import CartSidebar from '../../../src/components/cart/CartSidebar';
 
 export async function generateMetadata({
   params,
@@ -78,6 +80,10 @@ export default async function MenuPage({
 
       {/* Menu Display */}
       <MenuDisplay menu={menuData} />
+
+      {/* Cart Components */}
+      <CartButton />
+      <CartSidebar />
     </>
   );
 }
