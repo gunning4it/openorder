@@ -54,6 +54,7 @@ apps/api/prisma/migrations/dev.db*
 # Temporary files
 *.tmp
 *.log
+*.bak
 tmp/
 temp/
 
