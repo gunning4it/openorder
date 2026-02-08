@@ -19,11 +19,15 @@
 // Shared TypeScript types for OpenOrder
 // This package provides type definitions used across all apps
 
-// TODO: Add type definitions in Phase 1
+// Phase 1: Menu Management & Cart
+export * from './menu';
+export * from './cart';
+export * from './api';
+export * from './media';
+export * from './restaurant';
+
+// TODO: Add additional type definitions in future phases
 // export * from './restaurant';
-// export * from './menu';
 // export * from './order';
 // export * from './payment';
 // export * from './pos';
-
-export {};
