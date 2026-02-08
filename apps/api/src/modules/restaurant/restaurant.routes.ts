@@ -1,46 +1,77 @@
-// SPDX-License-Identifier: AGPL-3.0
-// OpenOrder - Restaurant Routes
-// Create and retrieve restaurants
+/*
+ * OpenOrder - Open-source restaurant ordering platform
+ * Copyright (C) 2026  Josh Gunning
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 
 import { FastifyPluginAsync } from 'fastify';
-import { z } from 'zod';
-import { restaurantService } from './restaurant.service.js';
+import {
+  createRestaurantSchema,
+  updateRestaurantSchema,
+  generateSlugSchema,
+} from '@openorder/shared-types';
+import { RestaurantService } from './restaurant.service.js';
+import { verifyAuth, requireRole } from '../auth/auth.middleware.js';
 import { handleError } from '../../utils/errors.js';
+import { prisma } from '../../config/database.js';
+import type { JwtPayload } from '../../plugins/jwt.js';
 
-const createRestaurantSchema = z.object({
-  name: z.string().min(1).max(255),
-  slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens'),
-  description: z.string().max(1000).optional(),
-  email: z.string().email().optional(),
-  phone: z.string().max(20).optional(),
-  timezone: z.string().optional(),
-  currency: z.string().length(3).optional(),
-  locale: z.string().optional(),
-  addressLine1: z.string().max(255).optional(),
-  addressLine2: z.string().max(255).optional(),
-  city: z.string().max(100).optional(),
-  state: z.string().max(100).optional(),
-  postalCode: z.string().max(20).optional(),
-  country: z.string().length(2).optional(),
-});
+const restaurantService = new RestaurantService(prisma);
 
 export const restaurantRoutes: FastifyPluginAsync = async (fastify) => {
-  // Create restaurant
-  fastify.post('/restaurants', async (request, reply) => {
-    try {
-      const data = createRestaurantSchema.parse(request.body);
+  /**
+   * POST /api/restaurants
+   * Create a new restaurant
+   * - Requires authentication (OWNER role)
+   * - Validates slug uniqueness
+   * - Returns created restaurant
+   */
+  fastify.post(
+    '/restaurants',
+    {
+      preHandler: [verifyAuth, requireRole('OWNER')],
+    },
+    async (request, reply) => {
+      try {
+        // Validate request body
+        const parseResult = createRestaurantSchema.safeParse(request.body);
+        if (!parseResult.success) {
+          throw parseResult.error;
+        }
 
-      const restaurant = await restaurantService.createRestaurant(data);
+        // Create restaurant
+        const restaurant = await restaurantService.createRestaurant(
+          parseResult.data
+        );
 
-      return reply.status(201).send({
-        restaurant,
-      });
-    } catch (error) {
-      return handleError(error, reply);
+        return reply.status(201).send({
+          success: true,
+          data: restaurant,
+        });
+      } catch (error) {
+        return handleError(error, reply);
+      }
     }
-  });
+  );
 
-  // Get restaurant by slug
+  /**
+   * GET /api/restaurants/:slug
+   * Get restaurant by slug
+   * - Public endpoint (no authentication required)
+   * - Returns restaurant details
+   */
   fastify.get('/restaurants/:slug', async (request, reply) => {
     try {
       const { slug } = request.params as { slug: string };
@@ -48,14 +79,66 @@ export const restaurantRoutes: FastifyPluginAsync = async (fastify) => {
       const restaurant = await restaurantService.getRestaurantBySlug(slug);
 
       return reply.send({
-        restaurant,
+        success: true,
+        data: restaurant,
       });
     } catch (error) {
       return handleError(error, reply);
     }
   });
 
-  // Check if slug is available
+  /**
+   * PUT /api/restaurants/:id
+   * Update restaurant by ID
+   * - Requires authentication (OWNER role)
+   * - Verifies user owns the restaurant
+   * - Allows partial updates
+   */
+  fastify.put(
+    '/restaurants/:id',
+    {
+      preHandler: [verifyAuth, requireRole('OWNER')],
+    },
+    async (request, reply) => {
+      try {
+        const user = request.user as JwtPayload;
+        const { id } = request.params as { id: string };
+
+        // Verify user owns this restaurant
+        if (user.restaurantId !== id) {
+          return reply.status(403).send({
+            error: 'You do not have access to this restaurant',
+          });
+        }
+
+        // Validate request body
+        const parseResult = updateRestaurantSchema.safeParse(request.body);
+        if (!parseResult.success) {
+          throw parseResult.error;
+        }
+
+        // Update restaurant
+        const restaurant = await restaurantService.updateRestaurant(
+          id,
+          parseResult.data
+        );
+
+        return reply.send({
+          success: true,
+          data: restaurant,
+        });
+      } catch (error) {
+        return handleError(error, reply);
+      }
+    }
+  );
+
+  /**
+   * GET /api/restaurants/check-slug/:slug
+   * Check if slug is available
+   * - Public endpoint
+   * - Returns availability status
+   */
   fastify.get('/restaurants/check-slug/:slug', async (request, reply) => {
     try {
       const { slug } = request.params as { slug: string };
@@ -63,31 +146,39 @@ export const restaurantRoutes: FastifyPluginAsync = async (fastify) => {
       const isAvailable = await restaurantService.isSlugAvailable(slug);
 
       return reply.send({
-        slug,
-        available: isAvailable,
+        success: true,
+        data: {
+          slug,
+          available: isAvailable,
+        },
       });
     } catch (error) {
       return handleError(error, reply);
     }
   });
 
-  // Generate slug from name
+  /**
+   * POST /api/restaurants/generate-slug
+   * Generate slug from name
+   * - Public endpoint
+   * - Returns generated slug
+   */
   fastify.post('/restaurants/generate-slug', async (request, reply) => {
     try {
-      const { name } = request.body as { name: string };
-
-      if (!name || typeof name !== 'string') {
-        return reply.status(400).send({
-          error: 'ValidationError',
-          message: 'Name is required',
-        });
+      // Validate request body
+      const parseResult = generateSlugSchema.safeParse(request.body);
+      if (!parseResult.success) {
+        throw parseResult.error;
       }
 
-      const slug = restaurantService.generateSlug(name);
+      const slug = restaurantService.generateSlug(parseResult.data.name);
 
       return reply.send({
-        name,
-        slug,
+        success: true,
+        data: {
+          name: parseResult.data.name,
+          slug,
+        },
       });
     } catch (error) {
       return handleError(error, reply);

@@ -13,6 +13,8 @@ import { configureJwt } from './plugins/jwt.js';
 import { healthRoutes } from './modules/health/health.routes.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { restaurantRoutes } from './modules/restaurant/restaurant.routes.js';
+import { mediaRoutes } from './modules/media/media.routes.js';
+import { menuRoutes } from './modules/menu/menu.routes.js';
 import { redis } from './config/redis.js';
 import { prisma } from './config/database.js';
 
@@ -63,6 +65,8 @@ async function start() {
     await fastify.register(healthRoutes);
     await fastify.register(authRoutes);
     await fastify.register(restaurantRoutes);
+    await fastify.register(mediaRoutes);
+    await fastify.register(menuRoutes);
 
     // Start server
     await fastify.listen({
