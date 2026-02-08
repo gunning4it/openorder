@@ -18,18 +18,51 @@
 
 'use client';
 
-import type { PublicMenuResponse } from '../../lib/api';
+import { useState } from 'react';
+import type { PublicMenuResponse, MenuItem } from '../../lib/api';
 import MenuCategoryNav from './MenuCategoryNav';
 import MenuCategory from './MenuCategory';
+import ItemDetailModal from './ItemDetailModal';
 
 interface MenuDisplayProps {
   menu: PublicMenuResponse;
 }
 
+interface SelectedModifier {
+  modifierId: string;
+  name: string;
+  price: number;
+}
+
 export default function MenuDisplay({ menu }: MenuDisplayProps) {
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const handleItemClick = (itemId: string) => {
-    // TODO: Open ItemDetailModal in Task #16
-    console.log('Item clicked:', itemId);
+    // Find the item across all categories
+    const item = menu.categories
+      .flatMap((cat) => cat.items)
+      .find((item) => item.id === itemId);
+
+    if (item) {
+      setSelectedItem(item);
+      setIsModalOpen(true);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedItem(null);
+  };
+
+  const handleAddToCart = (
+    item: MenuItem,
+    modifiers: SelectedModifier[],
+    quantity: number,
+    notes: string
+  ) => {
+    // TODO: Add to cart store in Task #17
+    console.log('Add to cart:', { item, modifiers, quantity, notes });
   };
 
   // Filter out empty categories
@@ -83,6 +116,14 @@ export default function MenuDisplay({ menu }: MenuDisplayProps) {
           ))}
         </div>
       </div>
+
+      {/* Item Detail Modal */}
+      <ItemDetailModal
+        item={selectedItem}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onAddToCart={handleAddToCart}
+      />
     </>
   );
 }

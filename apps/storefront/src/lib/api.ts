@@ -82,6 +82,8 @@ export interface MenuItem {
   allergens?: string[];
   tags?: string[];
   calories?: number;
+  prepTimeMin?: number;
+  maxQuantity?: number;
   modifierGroups: ModifierGroup[];
 }
 
