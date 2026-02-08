@@ -49,6 +49,26 @@ export function isRestaurantOpen(
 }
 
 /**
+ * Day names tuple - guarantees exactly 7 elements
+ */
+const DAY_NAMES = [
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+] as const;
+
+/**
+ * Get day name by index (0-6)
+ */
+function getDayNameByIndex(dayIndex: number): string {
+  return DAY_NAMES[dayIndex as 0 | 1 | 2 | 3 | 4 | 5 | 6];
+}
+
+/**
  * Get the next opening time for the restaurant
  */
 export function getNextOpeningTime(
@@ -62,8 +82,6 @@ export function getNextOpeningTime(
   const now = toZonedTime(new Date(), restaurant.timezone);
   const currentDayOfWeek = now.getDay();
   const currentTime = format(now, 'HH:mm', { timeZone: restaurant.timezone });
-
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
   // Check next 7 days
   for (let i = 0; i < 7; i++) {
@@ -97,7 +115,7 @@ export function getNextOpeningTime(
       };
     } else {
       return {
-        day: dayNames[checkDay] || 'Unknown',
+        day: getDayNameByIndex(checkDay),
         time: formatTime(hours.openTime),
       };
     }
@@ -138,9 +156,8 @@ export function getFormattedHours(hours: OperatingHours): string {
 }
 
 /**
- * Get day name from day of week number
+ * Get day name from day of week number (0-6)
  */
 export function getDayName(dayOfWeek: number): string {
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  return dayNames[dayOfWeek] || 'Unknown';
+  return getDayNameByIndex(dayOfWeek);
 }
