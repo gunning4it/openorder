@@ -36,21 +36,31 @@ const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'F
 const generalFormSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255),
   slug: z.string(),
-  description: z.string().max(1000).optional().nullable(),
-  email: z.string().email('Invalid email').optional().nullable(),
-  phone: z.string().max(20).optional().nullable(),
-  addressLine1: z.string().max(255).optional().nullable(),
-  addressLine2: z.string().max(255).optional().nullable(),
-  city: z.string().max(100).optional().nullable(),
-  state: z.string().max(100).optional().nullable(),
-  postalCode: z.string().max(20).optional().nullable(),
-  country: z.string().length(2).optional().nullable(),
+  description: z.string().max(1000).optional(),
+  email: z.string().email('Invalid email').optional(),
+  phone: z.string().max(20).optional(),
+  addressLine1: z.string().max(255).optional(),
+  addressLine2: z.string().max(255).optional(),
+  city: z.string().max(100).optional(),
+  state: z.string().max(100).optional(),
+  postalCode: z.string().max(20).optional(),
+  country: z.string().length(2).optional(),
   pickupEnabled: z.boolean(),
   deliveryEnabled: z.boolean(),
   dineInEnabled: z.boolean(),
   prepTimeMinutes: z.number().int().min(0).max(300),
   acceptingOrders: z.boolean(),
 });
+
+// Helper to convert empty strings to undefined for API submission
+function cleanFormData<T extends Record<string, any>>(data: T): Partial<T> {
+  const cleaned: Record<string, any> = {};
+  Object.keys(data).forEach((key) => {
+    const value = data[key];
+    cleaned[key] = value === '' ? undefined : value;
+  });
+  return cleaned as Partial<T>;
+}
 
 type GeneralFormData = z.infer<typeof generalFormSchema>;
 
@@ -71,9 +81,9 @@ type HoursFormData = z.infer<typeof hoursFormSchema>;
 // Branding form schema
 const brandingFormSchema = z.object({
   brandColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format'),
-  logoUrl: z.string().url().optional().nullable(),
-  coverImageUrl: z.string().url().optional().nullable(),
-  customCss: z.string().max(10000).optional().nullable(),
+  logoUrl: z.string().url().optional(),
+  coverImageUrl: z.string().url().optional(),
+  customCss: z.string().max(10000).optional(),
 });
 
 type BrandingFormData = z.infer<typeof brandingFormSchema>;
@@ -188,23 +198,23 @@ export default function SettingsPage() {
   }, [operatingHours, hoursForm]);
 
   const onSubmitGeneral = async (data: GeneralFormData) => {
-    await updateRestaurant.mutateAsync({
+    await updateRestaurant.mutateAsync(cleanFormData({
       name: data.name,
-      description: data.description ?? undefined,
-      email: data.email ?? undefined,
-      phone: data.phone ?? undefined,
-      addressLine1: data.addressLine1 ?? undefined,
-      addressLine2: data.addressLine2 ?? undefined,
-      city: data.city ?? undefined,
-      state: data.state ?? undefined,
-      postalCode: data.postalCode ?? undefined,
-      country: data.country ?? undefined,
+      description: data.description,
+      email: data.email,
+      phone: data.phone,
+      addressLine1: data.addressLine1,
+      addressLine2: data.addressLine2,
+      city: data.city,
+      state: data.state,
+      postalCode: data.postalCode,
+      country: data.country,
       pickupEnabled: data.pickupEnabled,
       deliveryEnabled: data.deliveryEnabled,
       dineInEnabled: data.dineInEnabled,
       prepTimeMinutes: data.prepTimeMinutes,
       acceptingOrders: data.acceptingOrders,
-    });
+    }));
   };
 
   const onSubmitHours = async (data: HoursFormData) => {
@@ -212,12 +222,12 @@ export default function SettingsPage() {
   };
 
   const onSubmitBranding = async (data: BrandingFormData) => {
-    await updateRestaurant.mutateAsync({
+    await updateRestaurant.mutateAsync(cleanFormData({
       brandColor: data.brandColor,
-      logoUrl: data.logoUrl ?? undefined,
-      coverImageUrl: data.coverImageUrl ?? undefined,
-      customCss: data.customCss ?? undefined,
-    });
+      logoUrl: data.logoUrl,
+      coverImageUrl: data.coverImageUrl,
+      customCss: data.customCss,
+    }));
   };
 
   if (isLoadingRestaurant || isLoadingHours) {
