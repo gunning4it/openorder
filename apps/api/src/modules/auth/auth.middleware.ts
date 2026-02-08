@@ -12,7 +12,7 @@ import type { JwtPayload } from '../../plugins/jwt.js';
 export async function verifyAuth(request: FastifyRequest, _reply: FastifyReply) {
   try {
     await request.jwtVerify();
-  } catch (error) {
+  } catch {
     throw new AuthError('Invalid or expired token');
   }
 }

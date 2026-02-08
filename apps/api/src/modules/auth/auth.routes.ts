@@ -149,7 +149,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
     onRequest: async (request, reply) => {
       try {
         await request.jwtVerify();
-      } catch (error) {
+      } catch {
         return reply.status(401).send({
           error: 'AuthError',
           message: 'Invalid or expired token',

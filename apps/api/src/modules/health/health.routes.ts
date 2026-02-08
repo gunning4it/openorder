@@ -37,7 +37,7 @@ export const healthRoutes: FastifyPluginAsync = async (fastify) => {
     try {
       await prisma.$queryRaw`SELECT 1`;
       health.database = 'connected';
-    } catch (error) {
+    } catch {
       health.database = 'disconnected';
       health.status = 'degraded';
     }
@@ -46,7 +46,7 @@ export const healthRoutes: FastifyPluginAsync = async (fastify) => {
     try {
       await redis.ping();
       health.redis = 'connected';
-    } catch (error) {
+    } catch {
       health.redis = 'disconnected';
       health.status = 'degraded';
     }

@@ -10,7 +10,6 @@ const env = getEnv();
 // Prisma Client singleton pattern
 // Prevents multiple instances in development (hot reload)
 declare global {
-  // eslint-disable-next-line no-var
   var __prisma: PrismaClient | undefined;
 }
 
