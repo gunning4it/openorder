@@ -54,8 +54,9 @@ RUN pnpm install --frozen-lockfile --prod
 # Copy Prisma schema and migrations
 COPY apps/api/prisma ./apps/api/prisma/
 
-# Generate Prisma Client (production)
-RUN cd apps/api && pnpm prisma generate
+# Copy generated Prisma Client from builder
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
 
 # Copy built application from builder
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
@@ -72,4 +73,4 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:4000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-CMD ["sh", "-c", "cd apps/api && pnpm prisma migrate deploy && node dist/server.js"]
+CMD ["sh", "-c", "cd apps/api && npx prisma migrate deploy && node dist/server.js"]

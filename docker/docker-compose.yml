@@ -69,8 +69,6 @@ services:
     networks:
       - backend
       - default
-    command: >
-      sh -c "npx prisma migrate deploy && node dist/server.js"
 
   storefront:
     build:

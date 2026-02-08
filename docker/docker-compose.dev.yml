@@ -23,7 +23,7 @@ services:
       - /app/apps/api/node_modules
     environment:
       NODE_ENV: development
-    command: npm run dev --workspace=@openorder/api
+    command: sh -c "pnpm install && cd apps/api && pnpm prisma generate && pnpm dev"
 
   storefront:
     build:
@@ -37,7 +37,7 @@ services:
       - /app/apps/storefront/.next
     environment:
       NODE_ENV: development
-    command: npm run dev --workspace=@openorder/storefront
+    command: sh -c "pnpm install && cd apps/storefront && pnpm dev"
 
   dashboard:
     build:
@@ -50,7 +50,7 @@ services:
       - /app/apps/dashboard/node_modules
     environment:
       NODE_ENV: development
-    command: npm run dev --workspace=@openorder/dashboard
+    command: sh -c "pnpm install && cd apps/dashboard && pnpm dev"
 
   nginx:
     volumes:
