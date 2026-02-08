@@ -2,7 +2,10 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:18-alpine3.23
+    build:
+      context: .
+      dockerfile: postgres.Dockerfile
+    image: openorder-postgres:18-alpine-fixed
     container_name: openorder-postgres
     restart: unless-stopped
     environment:
