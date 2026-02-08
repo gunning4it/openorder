@@ -25,6 +25,7 @@ import CartSidebar from '../../../src/components/cart/CartSidebar';
 import ClosedBanner from '../../../src/components/restaurant/ClosedBanner';
 import OperatingHours from '../../../src/components/restaurant/OperatingHours';
 import CartStateUpdater from '../../../src/components/cart/CartStateUpdater';
+import RestaurantSchema from '../../../src/components/seo/RestaurantSchema';
 
 export async function generateMetadata({
   params,
@@ -40,17 +41,65 @@ export async function generateMetadata({
   }
 
   const { restaurant } = menuData;
+  const baseUrl = process.env.NEXT_PUBLIC_URL || 'http://localhost:3000';
+  const pageUrl = `${baseUrl}/order/${params.slug}`;
+  const imageUrl = restaurant.coverImageUrl || restaurant.logoUrl || `${baseUrl}/og-default.png`;
+
+  const title = `Order from ${restaurant.name} | Online Menu`;
+  const description =
+    restaurant.description ||
+    `Browse the menu and order online from ${restaurant.name}. ${
+      restaurant.pickupEnabled ? 'Pickup' : ''
+    }${restaurant.pickupEnabled && restaurant.deliveryEnabled ? ', ' : ''}${
+      restaurant.deliveryEnabled ? 'Delivery' : ''
+    } available.`;
 
   return {
-    title: `Order from ${restaurant.name} | Online Menu`,
-    description:
-      restaurant.description ||
-      `Browse the menu and order online from ${restaurant.name}`,
+    title,
+    description,
+    keywords: [
+      restaurant.name,
+      'restaurant',
+      'online ordering',
+      'menu',
+      ...(restaurant.city ? [restaurant.city] : []),
+      ...(restaurant.state ? [restaurant.state] : []),
+      ...(restaurant.pickupEnabled ? ['pickup', 'takeout'] : []),
+      ...(restaurant.deliveryEnabled ? ['delivery'] : []),
+      ...(restaurant.dineInEnabled ? ['dine-in'] : []),
+    ],
     openGraph: {
-      title: `${restaurant.name} - Order Online`,
-      description: restaurant.description || `Order from ${restaurant.name}`,
-      images: restaurant.logoUrl ? [restaurant.logoUrl] : [],
+      title,
+      description,
+      url: pageUrl,
+      siteName: 'OpenOrder',
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: `${restaurant.name} - Order Online`,
+        },
+      ],
+      locale: restaurant.locale || 'en_US',
       type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [imageUrl],
+    },
+    alternates: {
+      canonical: pageUrl,
+    },
+    robots: {
+      index: restaurant.isActive,
+      follow: restaurant.isActive,
+      googleBot: {
+        index: restaurant.isActive,
+        follow: restaurant.isActive,
+      },
     },
   };
 }
@@ -70,6 +119,13 @@ export default async function MenuPage({
 
   return (
     <>
+      {/* SEO: Schema.org JSON-LD */}
+      <RestaurantSchema
+        restaurant={menuData.restaurant}
+        operatingHours={menuData.operatingHours}
+        categories={menuData.categories}
+      />
+
       {/* Closed Banner */}
       {!isOpen && (
         <ClosedBanner restaurant={menuData.restaurant} operatingHours={menuData.operatingHours} />

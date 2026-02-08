@@ -1,0 +1,13 @@
+# OpenOrder - Restaurant Ordering Platform
+# https://openorder.com
+
+User-agent: *
+Allow: /
+Allow: /order/
+
+# Disallow admin/private pages (future)
+Disallow: /api/
+Disallow: /_next/
+
+# Sitemap
+Sitemap: https://openorder.com/sitemap.xml
