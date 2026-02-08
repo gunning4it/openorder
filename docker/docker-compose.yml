@@ -1,0 +1,117 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: openorder-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-openorder}
+      POSTGRES_USER: ${DB_USER:-openorder}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Database password required}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-openorder}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: openorder-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redisdata:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ../
+      dockerfile: ./apps/api/Dockerfile
+    container_name: openorder-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      DATABASE_URL: postgresql://${DB_USER:-openorder}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-openorder}
+      REDIS_URL: redis://redis:6379
+      APP_SECRET: ${APP_SECRET:?App secret required}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      API_PORT: 4000
+    ports:
+      - "${API_PORT:-4000}:4000"
+    command: >
+      sh -c "npx prisma migrate deploy && node dist/server.js"
+
+  storefront:
+    build:
+      context: ../
+      dockerfile: ./apps/storefront/Dockerfile
+    container_name: openorder-storefront
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      API_URL: http://api:4000
+      NEXT_PUBLIC_API_URL: ${PUBLIC_URL}/api
+    ports:
+      - "${STOREFRONT_PORT:-3000}:3000"
+
+  dashboard:
+    build:
+      context: ../
+      dockerfile: ./apps/dashboard/Dockerfile
+    container_name: openorder-dashboard
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      VITE_API_URL: ${PUBLIC_URL}/api
+    ports:
+      - "${DASHBOARD_PORT:-3001}:80"
+
+  nginx:
+    image: nginx:alpine
+    container_name: openorder-nginx
+    restart: unless-stopped
+    depends_on:
+      - api
+      - storefront
+      - dashboard
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  pgdata:
+    driver: local
+  redisdata:
+    driver: local
+
+networks:
+  default:
+    name: openorder-network

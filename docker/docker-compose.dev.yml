@@ -1,0 +1,57 @@
+version: '3.8'
+
+# Development overrides for docker-compose.yml
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  api:
+    build:
+      context: ../
+      dockerfile: ./apps/api/Dockerfile.dev
+    volumes:
+      - ../apps/api:/app/apps/api
+      - ../packages:/app/packages
+      - /app/node_modules
+      - /app/apps/api/node_modules
+    environment:
+      NODE_ENV: development
+    command: npm run dev --workspace=@openorder/api
+
+  storefront:
+    build:
+      context: ../
+      dockerfile: ./apps/storefront/Dockerfile.dev
+    volumes:
+      - ../apps/storefront:/app/apps/storefront
+      - ../packages:/app/packages
+      - /app/node_modules
+      - /app/apps/storefront/node_modules
+      - /app/apps/storefront/.next
+    environment:
+      NODE_ENV: development
+    command: npm run dev --workspace=@openorder/storefront
+
+  dashboard:
+    build:
+      context: ../
+      dockerfile: ./apps/dashboard/Dockerfile.dev
+    volumes:
+      - ../apps/dashboard:/app/apps/dashboard
+      - ../packages:/app/packages
+      - /app/node_modules
+      - /app/apps/dashboard/node_modules
+    environment:
+      NODE_ENV: development
+    command: npm run dev --workspace=@openorder/dashboard
+
+  nginx:
+    volumes:
+      - ./nginx.dev.conf:/etc/nginx/nginx.conf:ro

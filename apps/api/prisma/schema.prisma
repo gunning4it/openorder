@@ -1,0 +1,379 @@
+// OpenOrder Database Schema
+// PostgreSQL + Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// RESTAURANT
+// ============================================================
+
+model Restaurant {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique // URL-safe identifier: /order/{slug}
+  description   String?
+  logoUrl       String?
+  coverImageUrl String?
+  phone         String?
+  email         String?
+  timezone      String   @default("America/New_York")
+  currency      String   @default("USD")
+  locale        String   @default("en-US")
+
+  // Address (for display + tax calculation)
+  addressLine1  String?
+  addressLine2  String?
+  city          String?
+  state         String?
+  postalCode    String?
+  country       String   @default("US")
+  latitude      Float?
+  longitude     Float?
+
+  // Operating config
+  isActive         Boolean @default(true)
+  acceptingOrders  Boolean @default(true)
+  orderThrottleMax Int?    // Max orders per 15-min window, null = unlimited
+
+  // Fulfillment options
+  pickupEnabled    Boolean @default(true)
+  deliveryEnabled  Boolean @default(false)
+  dineInEnabled    Boolean @default(false)
+  prepTimeMinutes  Int     @default(20)  // Default estimated prep time
+
+  // Appearance / Branding
+  brandColor       String  @default("#000000")  // Primary brand color for storefront
+  customCss        String? // Optional custom CSS for storefront
+
+  // POS Configuration
+  posType          PosType @default(NONE)
+  posConfig        Json?   // Encrypted at-rest. Contains API keys, OAuth tokens, webhook URLs.
+
+  // Payment Configuration
+  paymentType      PaymentType @default(STRIPE_CONNECT)
+  stripeAccountId  String?     // Stripe Connect account ID (for STRIPE_CONNECT)
+  paymentConfig    Json?       // Encrypted. BYO Stripe keys or webhook config.
+
+  // Tax configuration
+  taxRate          Decimal  @default(0) @db.Decimal(5, 4) // e.g., 0.0825 = 8.25%
+  taxInclusive     Boolean  @default(false)
+
+  // Tip configuration
+  tipsEnabled      Boolean  @default(true)
+  tipPresets       Json     @default("[10, 15, 20, 25]") // Percentage presets
+
+  // Relations
+  staff            Staff[]
+  menuCategories   MenuCategory[]
+  menuItems        MenuItem[]
+  orders           Order[]
+  operatingHours   OperatingHours[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum PosType {
+  NONE
+  SQUARE
+  TOAST
+  CLOVER
+  GENERIC_WEBHOOK
+}
+
+enum PaymentType {
+  STRIPE_CONNECT     // Default: Stripe Connect direct charges
+  STRIPE_DIRECT      // BYO: Restaurant provides own Stripe keys
+  WEBHOOK_PAYMENT    // B2: Generic payment webhook
+}
+
+model OperatingHours {
+  id           String     @id @default(cuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  dayOfWeek    Int        // 0 = Sunday, 6 = Saturday
+  openTime     String     // "09:00" (24hr, restaurant local time)
+  closeTime    String     // "22:00"
+  isClosed     Boolean    @default(false)
+
+  @@unique([restaurantId, dayOfWeek])
+}
+
+// ============================================================
+// MENU
+// ============================================================
+
+model MenuCategory {
+  id           String     @id @default(cuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  name         String
+  description  String?
+  imageUrl     String?
+  sortOrder    Int        @default(0)
+  isActive     Boolean    @default(true)
+
+  // Availability windows (null = always available)
+  availableFrom String?   // "11:00"
+  availableTo   String?   // "15:00" (e.g., lunch only)
+
+  items        MenuItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([restaurantId, sortOrder])
+}
+
+model MenuItem {
+  id             String       @id @default(cuid())
+  restaurantId   String
+  restaurant     Restaurant   @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  categoryId     String
+  category       MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  name           String
+  description    String?
+  price          Int               // Price in cents (e.g., 1299 = $12.99)
+  compareAtPrice Int?              // Original price for showing discounts
+  imageUrl       String?
+
+  // Rich details
+  ingredients    String[]          // ["flour", "mozzarella", "tomato sauce", "basil"]
+  allergens      String[]          // ["gluten", "dairy"]
+  tags           String[]          // ["vegetarian", "spicy", "gluten-free", "popular"]
+  calories       Int?
+  prepTimeMin    Int?              // Item-specific prep time override
+
+  // Availability
+  isActive       Boolean           @default(true)
+  isAvailable    Boolean           @default(true)  // Real-time 86 status
+  stockCount     Int?              // null = unlimited
+  maxQuantity    Int               @default(99)    // Max qty per order
+
+  // POS mapping
+  posItemId      String?           // External POS item identifier
+  posData        Json?             // Additional POS-specific metadata
+
+  sortOrder      Int               @default(0)
+  isFeatured     Boolean           @default(false) // Highlighted items
+
+  modifierGroups MenuModifierGroup[]
+  orderItems     OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([restaurantId, categoryId, sortOrder])
+  @@index([restaurantId, isActive, isAvailable])
+}
+
+model MenuModifierGroup {
+  id          String   @id @default(cuid())
+  menuItemId  String
+  menuItem    MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  name        String              // "Size", "Toppings", "Dressing"
+  description String?
+  required    Boolean @default(false)
+  minSelect   Int     @default(0)
+  maxSelect   Int     @default(1)  // 1 = radio, >1 = checkboxes
+  sortOrder   Int     @default(0)
+
+  modifiers   MenuModifier[]
+}
+
+model MenuModifier {
+  id              String            @id @default(cuid())
+  modifierGroupId String
+  modifierGroup   MenuModifierGroup @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
+
+  name            String             // "Large", "Extra Cheese"
+  price           Int    @default(0) // Additional price in cents
+  isDefault       Boolean @default(false)
+  isAvailable     Boolean @default(true)
+  posModifierId   String?            // External POS modifier ID
+  sortOrder       Int     @default(0)
+  calories        Int?
+
+  orderItemModifiers OrderItemModifier[]
+}
+
+// ============================================================
+// ORDERS
+// ============================================================
+
+model Order {
+  id             String     @id @default(cuid())
+  restaurantId   String
+  restaurant     Restaurant @relation(fields: [restaurantId], references: [id])
+  orderNumber    Int        // Sequential per-restaurant, human-readable (#1042)
+
+  status         OrderStatus @default(PENDING)
+  source         OrderSource @default(ONLINE)
+  fulfillmentType FulfillmentType
+
+  // Customer info
+  customerName   String
+  customerPhone  String?
+  customerEmail  String?
+  customerNote   String?   // "No onions please", "Ring doorbell"
+
+  // Delivery-specific
+  deliveryAddress    String?
+  deliveryAddress2   String?
+  deliveryCity       String?
+  deliveryState      String?
+  deliveryPostalCode String?
+  deliveryLat        Float?
+  deliveryLng        Float?
+  deliveryNote       String?
+
+  // Dine-in specific
+  tableNumber    String?
+
+  // Scheduling
+  isScheduled    Boolean  @default(false) // false = ASAP
+  scheduledFor   DateTime?               // Requested pickup/delivery time
+  estimatedReady DateTime?               // Calculated ready time
+
+  // Financials (all in cents)
+  subtotal       Int       // Sum of item totals
+  taxAmount      Int
+  tipAmount      Int       @default(0)
+  deliveryFee    Int       @default(0)
+  discountAmount Int       @default(0)
+  total          Int       // subtotal + tax + tip + deliveryFee - discount
+
+  // Payment
+  paymentStatus  PaymentStatus @default(UNPAID)
+  paymentMethod  String?       // "card", "cash", etc.
+  paymentId      String?       // Stripe PaymentIntent ID or external reference
+  paymentData    Json?         // Additional payment metadata
+
+  // POS sync
+  posOrderId     String?       // External POS order ID after push
+  posSyncStatus  PosSyncStatus @default(NOT_SYNCED)
+  posSyncError   String?
+
+  // Timestamps
+  placedAt       DateTime  @default(now())
+  acceptedAt     DateTime?
+  preparingAt    DateTime?
+  readyAt        DateTime?
+  completedAt    DateTime?
+  cancelledAt    DateTime?
+  cancelReason   String?
+
+  items          OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([restaurantId, status])
+  @@index([restaurantId, placedAt])
+  @@index([restaurantId, orderNumber])
+}
+
+enum OrderStatus {
+  PENDING       // Just placed, awaiting restaurant acknowledgment
+  ACCEPTED      // Restaurant confirmed
+  PREPARING     // Kitchen is working on it
+  READY         // Ready for pickup/delivery
+  OUT_FOR_DELIVERY
+  COMPLETED     // Picked up / delivered
+  CANCELLED
+}
+
+enum OrderSource {
+  ONLINE        // Placed via storefront or widget
+  POS           // Pushed from POS system
+  PHONE         // Manually entered by staff
+  WALK_IN       // Manually entered by staff
+}
+
+enum FulfillmentType {
+  PICKUP
+  DELIVERY
+  DINE_IN
+}
+
+enum PaymentStatus {
+  UNPAID
+  PENDING       // Payment initiated but not confirmed
+  PAID
+  PARTIALLY_REFUNDED
+  REFUNDED
+  FAILED
+}
+
+enum PosSyncStatus {
+  NOT_SYNCED
+  SYNCING
+  SYNCED
+  FAILED
+}
+
+model OrderItem {
+  id           String   @id @default(cuid())
+  orderId      String
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId   String
+  menuItem     MenuItem @relation(fields: [menuItemId], references: [id])
+
+  name         String   // Snapshot at time of order (menu may change)
+  quantity     Int
+  unitPrice    Int      // Price per unit in cents at time of order
+  totalPrice   Int      // (unitPrice + modifier prices) * quantity
+  specialNotes String?
+
+  modifiers    OrderItemModifier[]
+}
+
+model OrderItemModifier {
+  id           String       @id @default(cuid())
+  orderItemId  String
+  orderItem    OrderItem    @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  modifierId   String
+  modifier     MenuModifier @relation(fields: [modifierId], references: [id])
+
+  name         String       // Snapshot
+  price        Int          // Snapshot
+}
+
+// ============================================================
+// STAFF & AUTH
+// ============================================================
+
+model Staff {
+  id           String     @id @default(cuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  email        String
+  name         String
+  passwordHash String
+  role         StaffRole  @default(STAFF)
+  isActive     Boolean    @default(true)
+  lastLoginAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([restaurantId, email])
+}
+
+enum StaffRole {
+  OWNER         // Full access, can delete restaurant
+  MANAGER       // All ops, can manage staff
+  STAFF         // View/manage orders, no settings access
+  KITCHEN       // KDS view only
+}
