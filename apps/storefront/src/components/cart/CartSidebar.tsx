@@ -32,6 +32,7 @@ export default function CartSidebar() {
   const subtotal = useCartStore((state) => state.subtotal());
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const removeItem = useCartStore((state) => state.removeItem);
+  const isRestaurantOpen = useCartStore((state) => state.isRestaurantOpen);
 
   if (!isOpen) {
     return null;
@@ -218,12 +219,18 @@ export default function CartSidebar() {
                 <button
                   disabled
                   className="w-full flex items-center justify-center px-6 py-4 text-base font-semibold text-white bg-gray-400 rounded-md cursor-not-allowed transition-all duration-200"
-                  title="Checkout will be available in Phase 2"
+                  title={
+                    !isRestaurantOpen
+                      ? 'Restaurant is currently closed'
+                      : 'Checkout will be available in Phase 2'
+                  }
                 >
-                  Checkout (Coming Soon)
+                  {!isRestaurantOpen ? 'Restaurant Closed' : 'Checkout (Coming Soon)'}
                 </button>
                 <p className="text-xs text-center text-gray-600">
-                  Payment processing will be available in Phase 2
+                  {!isRestaurantOpen
+                    ? 'You can browse the menu, but we are not accepting orders right now'
+                    : 'Payment processing will be available in Phase 2'}
                 </p>
               </div>
             )}

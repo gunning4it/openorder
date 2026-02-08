@@ -41,6 +41,7 @@ interface CartStore {
   items: CartItem[];
   restaurantSlug: string;
   isOpen: boolean;
+  isRestaurantOpen: boolean;
 
   // Actions
   addItem: (item: Omit<CartItem, 'id' | 'subtotal'>) => void;
@@ -49,6 +50,7 @@ interface CartStore {
   updateNotes: (itemId: string, notes: string) => void;
   clear: () => void;
   setRestaurantSlug: (slug: string) => void;
+  setRestaurantOpen: (isOpen: boolean) => void;
   toggleSidebar: () => void;
   openSidebar: () => void;
   closeSidebar: () => void;
@@ -79,6 +81,7 @@ export const useCartStore = create<CartStore>()(
       items: [],
       restaurantSlug: '',
       isOpen: false,
+      isRestaurantOpen: true,
 
       addItem: (item) => {
         const id = generateCartItemId();
@@ -119,6 +122,8 @@ export const useCartStore = create<CartStore>()(
       clear: () => set({ items: [] }),
 
       setRestaurantSlug: (slug) => set({ restaurantSlug: slug }),
+
+      setRestaurantOpen: (isOpen) => set({ isRestaurantOpen: isOpen }),
 
       toggleSidebar: () => set((state) => ({ isOpen: !state.isOpen })),
 
