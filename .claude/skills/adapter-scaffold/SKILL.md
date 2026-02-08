@@ -1,7 +1,7 @@
 ---
 name: adapter-scaffold
 description: Scaffold new POS or payment adapter implementations. Use when adding support for Square, Toast, Clover, Stripe, or other integrations.
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: Read, Write, Bash(cd packages/*)
 ---
 

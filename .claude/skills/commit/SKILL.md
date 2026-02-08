@@ -1,7 +1,7 @@
 ---
 name: commit
 description: Create conventional commits following OpenOrder standards with AGPL co-authoring
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: Bash(git*)
 ---
 

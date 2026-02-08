@@ -1,7 +1,7 @@
 ---
 name: monorepo-check
 description: Run comprehensive checks across the entire monorepo. Use before creating PRs or after making cross-package changes.
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: Bash(npm run*), Bash(cd apps/*), Bash(cd packages/*)
 ---
 

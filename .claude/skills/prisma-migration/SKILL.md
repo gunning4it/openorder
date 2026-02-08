@@ -1,7 +1,7 @@
 ---
 name: prisma-migration
 description: Create and validate Prisma database migrations. Use after schema.prisma changes or when adding new database features.
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: Bash(cd apps/api*), Bash(npx prisma*), Read, Edit
 ---
 

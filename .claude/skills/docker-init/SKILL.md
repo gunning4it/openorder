@@ -1,7 +1,7 @@
 ---
 name: docker-init
 description: Initialize Docker development environment with database migrations. Use for first-time setup or after pulling major changes.
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: Bash(docker*), Bash(cp*), Read
 ---
 
