@@ -2,33 +2,55 @@
 // OpenOrder - Redis Client Singleton
 // IORedis instance for rate limiting, caching, and BullMQ
 
-import Redis from 'ioredis';
+import { Redis } from 'ioredis';
 import { getEnv } from './env.js';
 
-const env = getEnv();
+let redisInstance: Redis | null = null;
+let shutdownHandlersRegistered = false;
 
-export const redis = new Redis(env.REDIS_URL, {
-  maxRetriesPerRequest: 3,
-  enableReadyCheck: true,
-  lazyConnect: true,
-});
+function getRedisClient(): Redis {
+  if (!redisInstance) {
+    const env = getEnv();
 
-// Connection error handling
-redis.on('error', (err) => {
-  console.error('Redis connection error:', err);
-});
+    redisInstance = new Redis(env.REDIS_URL, {
+      maxRetriesPerRequest: 3,
+      enableReadyCheck: true,
+      lazyConnect: true,
+    });
 
-redis.on('connect', () => {
-  console.log('✅ Redis connected');
-});
+    // Connection error handling
+    redisInstance.on('error', (err: Error) => {
+      console.error('Redis connection error:', err);
+    });
 
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  await redis.quit();
-  process.exit(0);
-});
+    redisInstance.on('connect', () => {
+      console.log('✅ Redis connected');
+    });
 
-process.on('SIGTERM', async () => {
-  await redis.quit();
-  process.exit(0);
+    // Register graceful shutdown handlers only once
+    if (!shutdownHandlersRegistered) {
+      process.on('SIGINT', async () => {
+        if (redisInstance) await redisInstance.quit();
+        process.exit(0);
+      });
+
+      process.on('SIGTERM', async () => {
+        if (redisInstance) await redisInstance.quit();
+        process.exit(0);
+      });
+
+      shutdownHandlersRegistered = true;
+    }
+  }
+
+  return redisInstance;
+}
+
+// Export as a getter property for backwards compatibility
+export const redis = new Proxy({} as Redis, {
+  get(_target, prop) {
+    const client = getRedisClient();
+    const value = client[prop as keyof Redis];
+    return typeof value === 'function' ? value.bind(client) : value;
+  },
 });

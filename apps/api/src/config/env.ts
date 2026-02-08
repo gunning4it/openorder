@@ -3,6 +3,13 @@
 // Uses Zod for runtime environment variable validation
 
 import { z } from 'zod';
+import { config } from 'dotenv';
+import { resolve } from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -36,6 +43,10 @@ export function loadEnv(): Env {
   if (env) {
     return env;
   }
+
+  // Load .env file from project root (../../.env from this file)
+  const envPath = resolve(__dirname, '../../../../.env');
+  config({ path: envPath });
 
   try {
     env = envSchema.parse(process.env);

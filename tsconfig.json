@@ -4,7 +4,7 @@
     "target": "ES2022",
     "lib": ["ES2022"],
     "module": "ESNext",
-    "moduleResolution": "bundler",
+    "moduleResolution": "bundler", // Note: Apps override this as needed (API uses "nodenext")
     "resolveJsonModule": true,
     "allowJs": true,
     "checkJs": false,

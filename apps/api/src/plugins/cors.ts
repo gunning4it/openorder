@@ -6,9 +6,9 @@ import { FastifyPluginAsync } from 'fastify';
 import cors from '@fastify/cors';
 import { getEnv } from '../config/env.js';
 
-const env = getEnv();
-
 export const configureCors: FastifyPluginAsync = async (fastify) => {
+  const env = getEnv();
+
   await fastify.register(cors, {
     origin: (origin, callback) => {
       // Allow requests from storefront, dashboard, and widget

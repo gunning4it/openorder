@@ -5,7 +5,7 @@
 import Fastify from 'fastify';
 import helmet from '@fastify/helmet';
 import { loadEnv, getEnv } from './config/env.js';
-import { logger } from './utils/logger.js';
+import { getLogger } from './utils/logger.js';
 import { handleError } from './utils/errors.js';
 import { configureCors } from './plugins/cors.js';
 import { configureRateLimit } from './plugins/rate-limit.js';
@@ -22,7 +22,7 @@ const env = getEnv();
 
 // Create Fastify instance
 const fastify = Fastify({
-  logger: logger,
+  logger: getLogger(),
   trustProxy: true, // Trust X-Forwarded-* headers (for nginx)
   requestIdHeader: 'x-request-id',
   requestIdLogLabel: 'reqId',

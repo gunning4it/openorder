@@ -2,14 +2,14 @@
 // OpenOrder - JWT Plugin
 // Handles JSON Web Token authentication
 
-import { FastifyPluginAsync } from 'fastify';
+import fastifyPlugin from 'fastify-plugin';
 import jwt from '@fastify/jwt';
 import cookie from '@fastify/cookie';
 import { getEnv } from '../config/env.js';
 
-const env = getEnv();
+async function jwtPlugin(fastify: any) {
+  const env = getEnv();
 
-export const configureJwt: FastifyPluginAsync = async (fastify) => {
   // Register cookie plugin first (JWT depends on it)
   await fastify.register(cookie);
 
@@ -24,7 +24,10 @@ export const configureJwt: FastifyPluginAsync = async (fastify) => {
       signed: false, // We'll use JWT signature instead
     },
   });
-};
+}
+
+// Export as a fastify-plugin to avoid encapsulation
+export const configureJwt = fastifyPlugin(jwtPlugin);
 
 // JWT payload interface
 export interface JwtPayload {
